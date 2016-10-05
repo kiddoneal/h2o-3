@@ -669,7 +669,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           model._output._updates++;
           Log.info("Time taken (ms) to updateX is "+(System.currentTimeMillis()-curtime));
 
-
           // 2) Update Y matrix given fixed X
           curtime = System.currentTimeMillis();
           if (model._output._updates < _parms._max_updates) {    // If max_updates is odd, we will terminate after the X update
@@ -681,7 +680,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           }
           Log.info("Time taken (ms) to updateY is "+(System.currentTimeMillis()-curtime));
 
-
           // 3) Compute average change in objective function
           curtime = System.currentTimeMillis();
 
@@ -689,7 +687,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           objtsk.doAll(dinfo._adaptedFrame);
           double obj_new = objtsk._loss + _parms._gamma_x * xtsk._xreg + _parms._gamma_y * yreg;
           Log.info("Time taken (ms) to calculate new objective function value is "+(System.currentTimeMillis()-curtime));
-
           model._output._avg_change_obj = (model._output._objective - obj_new) / nobs;
           model._output._iterations++;
 
