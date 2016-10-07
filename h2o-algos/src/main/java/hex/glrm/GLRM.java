@@ -607,7 +607,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // 0) Initialize Y and X matrices
         // Jam A and X into a single frame for distributed computation
         // [A,X,W] A is read-only training data, X is matrix from prior iteration, W is working copy of X this iteration
-
         fr = new Frame(_train);
         Vec anyvec = fr.anyVec();
         assert anyvec != null;
@@ -624,8 +623,10 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
         // Use closed form solution for X if quadratic loss and regularization
         _job.update(1, "Initializing X and Y matrices");   // One unit of work
+
         curtime = System.currentTimeMillis();
         double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, model, na_cnt);
+        Log.info("Time taken (ms) to initializeXY with (Y operation single thread) is "+(System.currentTimeMillis()-curtime));
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
         Archetypes ytnew = yt;
         Log.info("Time taken (ms) to initializeXY with (Y operation single thread) is "+(System.currentTimeMillis()-curtime));
@@ -640,6 +641,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // Compute initial objective function
         _job.update(1, "Computing initial objective function");   // One unit of work
         boolean regX = _parms._regularization_x != GlrmRegularizer.None && _parms._gamma_x != 0;  // Assume regularization on initial X is finite, else objective can be NaN if \gamma_x = 0
+
         curtime = System.currentTimeMillis();
         ObjCalc objtsk = new ObjCalc(_parms, yt, _ncolA, _ncolX, dinfo._cats, model._output._normSub,
                                      model._output._normMul, model._output._lossFunc, weightId, regX);
@@ -663,6 +665,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
           // TODO: Should step be divided by number of original or expanded (with 0/1 categorical) cols?
           // 1) Update X matrix given fixed Y
+
+          // find out how much time it takes to update x
           curtime = System.currentTimeMillis();
           UpdateX xtsk = new UpdateX(_parms, yt, step/_ncolA, overwriteX, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
           xtsk.doAll(dinfo._adaptedFrame);
@@ -682,7 +686,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
           // 3) Compute average change in objective function
           curtime = System.currentTimeMillis();
-
           objtsk = new ObjCalc(_parms, ytnew, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
           objtsk.doAll(dinfo._adaptedFrame);
           double obj_new = objtsk._loss + _parms._gamma_x * xtsk._xreg + _parms._gamma_y * yreg;
