@@ -32,19 +32,18 @@ def glrm_PUBDEV_3454():
 #  seeds = 1475363366    # a good seed
 #  seeds = 1475600507    # seed with high iteration number
 
-  datahex = \
-      h2o.upload_file(pyunit_utils.locate("/Users/wendycwong/Documents/PUBDEV_3454_GLRM/glrm_data_DTolstonogov.csv"),
-                      col_names=feature_names, col_types=feature_types)
-  # data2 = h2o.upload_file(pyunit_utils.locate("/Users/wendycwong/Documents/PUBDEV_3454_GLRM/glrm_data_DTolstonogov.csv"),
-  #                               col_names=feature_names)
   # datahex = \
-  #     h2o.upload_file(pyunit_utils.locate("/Users/wendycwong/Documents/PUBDEV_3454_GLRM/glrm_data_DTol1000.csv"),
-  #                     col_names=feature_names)
+  #     h2o.upload_file(pyunit_utils.locate("/Users/wendycwong/Documents/PUBDEV_3454_GLRM/glrm_data_DTolstonogov.csv"),
+  #                     col_names=feature_names, col_types=feature_types, na_strings=["NA"])
+
+  datahex = \
+       h2o.upload_file(pyunit_utils.locate("/Users/wendycwong/Documents/PUBDEV_3454_GLRM/glrm_data_DTolstonogov.csv"),
+                       col_names=feature_names, na_strings=["NA"])
 
 #  datahex.describe()
 
 # k = 9
-  glrm_h2o = H2OGeneralizedLowRankEstimator(k=9, loss="Quadratic", transform="STANDARDIZE", multi_loss="Categorical",
+  glrm_h2o = H2OGeneralizedLowRankEstimator(k=10, loss="Quadratic", transform="STANDARDIZE", multi_loss="Categorical",
                                             model_id="clients_core_glrm", regularization_x="L2",
                                             regularization_y="L1", gamma_x=0.2, gamma_y=0.5, max_iterations=1000,
                                             init="SVD", seed=seeds)
