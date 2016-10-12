@@ -42,10 +42,12 @@ def glrm_PUBDEV_3454():
 
 #  datahex.describe()
 
-# k = 9
-  glrm_h2o = H2OGeneralizedLowRankEstimator(k=10, loss="Quadratic", transform="STANDARDIZE", multi_loss="Categorical",
+# k = 9, max_iterations = 1000
+  kD=10
+  max_iters = 1000
+  glrm_h2o = H2OGeneralizedLowRankEstimator(k=kD, loss="Quadratic", transform="STANDARDIZE", multi_loss="Categorical",
                                             model_id="clients_core_glrm", regularization_x="L2",
-                                            regularization_y="L1", gamma_x=0.2, gamma_y=0.5, max_iterations=1000,
+                                            regularization_y="L1", gamma_x=0.2, gamma_y=0.5, max_iterations=max_iters,
                                             init="SVD", seed=seeds)
   startcsv = time.time()
 #  glrm_h2o.train(x=features, training_frame=data2)
