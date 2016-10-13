@@ -443,7 +443,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
           value = (Double) o;
         }
         else {
-          throw new PredictUnknownTypeException("Unknown object type " + o.getClass().getName());
+          throw new PredictUnknownTypeException(
+                  "Unexpected object type " + o.getClass().getName() + " for numeric column " + dataColumnName);
         }
 
         rawData[index] = value;
@@ -472,7 +473,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
           rawData[index] = value;
         }
         else {
-          throw new PredictUnknownTypeException("Unknown object type " + o.getClass().getName());
+          throw new PredictUnknownTypeException(
+                  "Unexpected object type " + o.getClass().getName() + " for categorical column " + dataColumnName);
         }
       }
     }
