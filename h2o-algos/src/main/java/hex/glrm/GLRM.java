@@ -1177,7 +1177,9 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       assert (_ncolA + 2*_ncolX) == cs.length;
       double[] a = new double[_ncolA];
       double[] grad = new double[_ncolX];
+      double[] tgrad = new double[_ncolX];  // temporary gradient for comparison
       double[] u = new double[_ncolX];
+      double[] txy = new double[_ncolX];
       Chunk chkweight = _weightId >= 0 ? cs[_weightId] : new C0DChunk(1, cs[0]._len);
       Random rand = RandomUtils.getRNG(0);
       _loss = _xreg = 0;
@@ -1186,6 +1188,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         rand.setSeed(_parms._seed + cs[0].start() + row); //global row ID determines the seed
  //       double[] grad = new double[_ncolX]; // take it memory allocation out of loop
         Arrays.fill(grad, 0.0);
+        Arrays.fill(tgrad, 0.0);  // temporary gradient for comparison
 
         // Additional user-specified weight on loss for this row
         double cweight = chkweight.atd(row);
@@ -1215,10 +1218,25 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           double[] weight = _lossFunc[j].mlgrad(xy, (int) a[j]);
           double[][] ysub = _yt.getCatBlock(j);
           for (int k = 0; k < _ncolX; k++) {
-            for (int c = 0; c < weight.length; c++)
+            for (int c = 0; c < weight.length; c++) {
               grad[k] += cweight * weight[c] * ysub[k][c];
+              int cidx = _yt.getCatCidx(j, c);
+              double archtypevalues = 0;
+              if (_yt._transposed)
+                archtypevalues = _yt._archetypes[cidx][k];
+              else
+                archtypevalues = _yt._archetypes[k][cidx];
+
+              tgrad[k] += cweight *weight[c] * archtypevalues;
+            }
           }
         }
+
+        // check if the two gradient calculations are the same
+        double tdiff = 0.0;
+        for (int index = 0; index < _ncolX; index++)
+          tdiff += grad[index]-tgrad[index];
+        assert tdiff < 1e-10;
 
         // Numeric columns
         for (int j = _ncats; j < _ncolA; j++) {
@@ -1257,6 +1275,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // Categorical columns
         for (int j = 0; j < _ncats; j++) {
           if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
+          Arrays.fill(txy, 0.0);
           double[] xy = ArrayUtils.multVecArr(xnew, _yt.getCatBlock(j));
           _loss +=  _lossFunc[j].mloss(xy, (int) a[j]);
         }
@@ -1273,6 +1292,28 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       }
     }
 
+
+    public static double[] multVecArr(double[] nums, double[][] ary) {
+      if(ary == null || nums == null) return null;
+      assert nums.length == ary.length : "Inner dimensions must match: Got " + nums.length + " != " + ary.length;
+      double[] res = new double[ary[0].length];
+      for(int j = 0; j < ary[0].length; j++) {
+        res[j] = 0;
+        for(int i = 0; i < ary.length; i++)
+          res[j] += nums[i] * ary[i][j];
+      }
+      return res;
+    }
+
+
+    private double[] multVecArrFast(double[] xnew, Archetypes _yt, double[] xy) {
+      for (int k=0; k < _ncolX; k++) {
+        
+      }
+
+
+      return xy;
+    }
     @Override public void reduce(UpdateX other) {
       _loss += other._loss;
       _xreg += other._xreg;
