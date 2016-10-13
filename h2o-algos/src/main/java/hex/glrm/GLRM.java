@@ -1176,13 +1176,16 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
       double[] a = new double[_ncolA];
+      double[] grad = new double[_ncolX];
+      double[] u = new double[_ncolX];
       Chunk chkweight = _weightId >= 0 ? cs[_weightId] : new C0DChunk(1, cs[0]._len);
       Random rand = RandomUtils.getRNG(0);
       _loss = _xreg = 0;
 
       for (int row = 0; row < cs[0]._len; row++) {
         rand.setSeed(_parms._seed + cs[0].start() + row); //global row ID determines the seed
-        double[] grad = new double[_ncolX];
+ //       double[] grad = new double[_ncolX]; // take it memory allocation out of loop
+        Arrays.fill(grad, 0.0);
 
         // Additional user-specified weight on loss for this row
         double cweight = chkweight.atd(row);
@@ -1236,7 +1239,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         }
 
         // Update row x_i of working copy with new values
-        double[] u = new double[_ncolX];
+//        double[] u = new double[_ncolX];  // move this to outside loop to increase efficiency
+        Arrays.fill(u, 0.0);
         for (int k = 0; k < _ncolX; k++) {
           double xold = chk_xold(cs, k).atd(row);   // Old value of x_i
           u[k] = xold - _alpha * grad[k];
@@ -1384,10 +1388,12 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     @Override protected void postGlobal() {
       assert _ytnew.length == _ytold.nfeatures() && _ytnew[0].length == _ytold.rank();
       Random rand = RandomUtils.getRNG(_parms._seed);
+      double[] u = new double[_ytnew[0].length];
 
       // Compute new y_j values using proximal gradient
       for (int j = 0; j < _ytnew.length; j++) {
-        double[] u = new double[_ytnew[0].length];
+//        double[] u = new double[_ytnew[0].length];  // reduce memory allocation
+        Arrays.fill(u, 0.0);
         for (int k = 0; k < _ytnew[0].length; k++) {
           // double u = _ytold[j][k] - _alpha * _ytnew[j][k];
           // _ytnew[j][k] = _parms.rproxgrad_y(u, _alpha);
@@ -1530,6 +1536,10 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       assert (_ncolA + 2*_ncolX) == cs.length;
       Chunk chkweight = _weightId >= 0 ? cs[_weightId]:new C0DChunk(1,cs[0]._len);
       _loss = _xold_reg = 0;
+      double[] xrow = null;
+
+      if (_regX)  // allocation memory only if necessary
+         xrow = new double[_ncolX];
 
       for (int row = 0; row < cs[0]._len; row++) {
         // Additional user-specified weight on loss for this row
@@ -1570,7 +1580,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // Calculate regularization term for old X if requested
         if (_regX) {
           int idx = 0;
-          double[] xrow = new double[_ncolX];
+//          double[] xrow = new double[_ncolX];
+          Arrays.fill(xrow, 0.0);
           for (int j = _ncolA; j < _ncolA+_ncolX; j++) {
             // double x = cs[j].atd(row);
             // _xold_reg += _parms.regularize_x(x);
